@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>活動紀錄表產生器</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1c1c1c;
+    --line:#2b2b2b;
+    --paper:#ffffff;
+    --toolbar-bg:#f3f1ec;
+    --accent:#8a4b3b;
+    --accent-soft:#f0e2da;
+    --muted:#6b6b6b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Microsoft JhengHei","PMingLiU","Noto Sans TC",-apple-system,sans-serif;
+    background:#e9e6df;
+    color:var(--ink);
+    padding:32px 16px 80px;
+  }
+  .toolbar{
+    max-width:900px;
+    margin:0 auto 20px;
+    background:var(--toolbar-bg);
+    border:1px solid #d8d3c7;
+    border-radius:10px;
+    padding:14px 18px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .toolbar .title{
+    font-size:15px;
+    font-weight:700;
+    color:var(--accent);
+    letter-spacing:1px;
+  }
+  .toolbar .actions{display:flex; gap:8px; flex-wrap:wrap;}
+  button{
+    font-family:inherit;
+    font-size:13px;
+    border:1px solid var(--accent);
+    background:var(--paper);
+    color:var(--accent);
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  button:hover{background:var(--accent); color:#fff;}
+  button.primary{background:var(--accent); color:#fff;}
+  button.primary:hover{background:#6f3b2e;}
+  button.ghost{border-color:#bbb; color:#555;}
+  button.ghost:hover{background:#555; color:#fff;}
+
+  #report-wrap{
+    max-width:900px;
+    margin:0 auto;
+  }
+  #report{
+    background:var(--paper);
+    border:2px solid var(--line);
+  }
+  table.info{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+  }
+  table.info td{
+    border:1px solid var(--line);
+    padding:12px 14px;
+    font-size:15px;
+    vertical-align:middle;
+  }
+  table.info td.label{
+    width:26%;
+    text-align:center;
+    font-weight:700;
+    background:var(--accent-soft);
+    letter-spacing:2px;
+  }
+  table.info td.value{
+    text-align:center;
+  }
+  .editable{
+    outline:none;
+    min-height:1.4em;
+    line-height:1.5;
+  }
+  .editable:focus{background:#fffbe9;}
+  .photo-header{
+    text-align:center;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:10px;
+    padding:12px 0;
+    border:1px solid var(--line);
+    background:var(--accent-soft);
+  }
+  .photo-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .photo-cell{
+    border:1px solid var(--line);
+    padding:10px 10px 12px;
+    position:relative;
+  }
+  .drop-zone{
+    width:100%;
+    height:220px;
+    border:2px dashed #b9b2a3;
+    border-radius:4px;
+    background:#faf9f6;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+    cursor:pointer;
+    overflow:hidden;
+    position:relative;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .drop-zone.dragover{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .drop-zone img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .drop-zone .hint{padding:10px; line-height:1.6;}
+  .drop-zone .hint b{display:block; font-size:20px; margin-bottom:4px; color:#a89b83;}
+  .drop-zone input[type=file]{display:none;}
+  .cell-tools{
+    position:absolute;
+    top:6px;
+    right:6px;
+    display:none;
+    gap:4px;
+    z-index:5;
+  }
+  .photo-cell:hover .cell-tools{display:flex;}
+  .cell-tools button{
+    padding:3px 8px;
+    font-size:11px;
+    background:rgba(255,255,255,.92);
+  }
+  .caption{
+    margin-top:8px;
+    font-size:13px;
+    color:#333;
+    outline:none;
+    line-height:1.5;
+  }
+  .caption:focus{background:#fffbe9;}
+  .remove-row{
+    display:block;
+    margin:6px auto 0;
+    font-size:11px;
+    color:#b04a3a;
+    border-color:#e0bdb3;
+    background:transparent;
+  }
+  .add-row-wrap{
+    text-align:center;
+    padding:14px;
+    border:1px dashed #c7c1b3;
+    border-top:none;
+  }
+  @media (max-width:640px){
+    .photo-grid{grid-template-columns:1fr;}
+    table.info td.label{width:32%; font-size:13px; letter-spacing:1px;}
+    .toolbar{flex-direction:column; align-items:stretch;}
+  }
+  @media print{
+    body{background:#fff; padding:0;}
+    .toolbar, .add-row-wrap, .cell-tools{display:none !important;}
+    #report{border:2px solid #000;}
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="title">活動紀錄表 · 產生器</div>
+  <div class="actions">
+    <button id="btnAddRow" class="ghost">＋ 新增照片列</button>
+    <button id="btnPdf">匯出 PDF</button>
+    <button id="btnDoc" class="primary">匯出 Word</button>
+  </div>
+</div>
+
+<div id="report-wrap">
+  <div id="report">
+    <table class="info">
+      <tr>
+        <td class="label">活動名稱</td>
+        <td class="value"><div class="editable" contenteditable="true">--</div></td>
+      </tr>
+      <tr>
+        <td class="label">辦理時間</td>
+        <td class="value"><div class="editable" contenteditable="true">115年-月-日</div></td>
+      </tr>
+      <tr>
+        <td class="label">參與人員</td>
+        <td class="value"><div class="editable" contenteditable="true">（如簽到）</div></td>
+      </tr>
+      <tr>
+        <td class="label">活動內容說明</td>
+        <td class="value"><div class="editable" contenteditable="true">--</div></td>
+      </tr>
+    </table>
+
+    <div class="photo-header editable" contenteditable="true">活 動 照 片</div>
+
+    <div id="photoRows">
+      <!-- photo rows injected by JS -->
+    </div>
+  </div>
+
+  <div class="add-row-wrap">
+    <button id="btnAddRow2" class="ghost">＋ 新增一列（左右各一張照片）</button>
+  </div>
+</div>
+
+<script>
+const photoRows = document.getElementById('photoRows');
+
+function makeCell(defaultCaption){
+  const cell = document.createElement('div');
+  cell.className = 'photo-cell';
+  cell.innerHTML = `
+    <div class="cell-tools">
+      <button class="btnClear" type="button">清除圖片</button>
+    </div>
+    <label class="drop-zone">
+      <input type="file" accept="image/*">
+      <div class="hint"><b>＋</b>點擊或拖曳圖片至此<br>自動縮放填滿</div>
+    </label>
+    <div class="caption editable" contenteditable="true">${defaultCaption || '說明：'}</div>
+  `;
+  const dz = cell.querySelector('.drop-zone');
+  const input = cell.querySelector('input[type=file]');
+  const clearBtn = cell.querySelector('.btnClear');
+
+  function loadFile(file){
+    if(!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      dz.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      dz.appendChild(img);
+      // re-attach hidden input for future changes
+      const newInput = document.createElement('input');
+      newInput.type = 'file';
+      newInput.accept = 'image/*';
+      newInput.style.display = 'none';
+      dz.appendChild(newInput);
+      newInput.addEventListener('change', ev => loadFile(ev.target.files[0]));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  input.addEventListener('change', e => loadFile(e.target.files[0]));
+  dz.addEventListener('click', e => {
+    if(e.target.tagName === 'IMG') { /* still allow re-upload via click */ }
+    const fileInput = dz.querySelector('input[type=file]');
+    fileInput.click();
+  });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('dragover');
+    loadFile(e.dataTransfer.files[0]);
+  });
+  clearBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    dz.innerHTML = `<input type="file" accept="image/*" style="display:none"><div class="hint"><b>＋</b>點擊或拖曳圖片至此<br>自動縮放填滿</div>`;
+    dz.querySelector('input[type=file]').addEventListener('change', ev => loadFile(ev.target.files[0]));
+  });
+
+  return cell;
+}
+
+function addPhotoRow(caption1, caption2){
+  const row = document.createElement('div');
+  row.className = 'photo-grid';
+  row.appendChild(makeCell(caption1));
+  row.appendChild(makeCell(caption2));
+
+  const removeWrap = document.createElement('div');
+  removeWrap.style.gridColumn = '1 / -1';
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-row';
+  removeBtn.textContent = '刪除此列';
+  removeBtn.type = 'button';
+  removeBtn.addEventListener('click', () => row.remove());
+  removeWrap.appendChild(removeBtn);
+  row.appendChild(removeWrap);
+
+  photoRows.appendChild(row);
+}
+
+// initial two rows, matching the sample layout
+addPhotoRow('說明：1-', '說明：2-');
+addPhotoRow('說明：3-', '說明：4-');
+
+document.getElementById('btnAddRow').addEventListener('click', () => addPhotoRow('說明：', '說明：'));
+document.getElementById('btnAddRow2').addEventListener('click', () => addPhotoRow('說明：', '說明：'));
+
+// ---------- PDF export ----------
+document.getElementById('btnPdf').addEventListener('click', async () => {
+  const btn = document.getElementById('btnPdf');
+  const original = btn.textContent;
+  btn.textContent = '匯出中…';
+  btn.disabled = true;
+  try{
+    const target = document.getElementById('report');
+    const canvas = await html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    // A4 = 210 x 297mm. Margins: top 1.5cm, left/right 1cm, bottom 1.5cm.
+    const marginTop = 15;
+    const marginSide = 10;
+    const marginBottom = 15;
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const usableWidth = pageWidth - marginSide * 2;
+    const usableHeight = pageHeight - marginTop - marginBottom;
+
+    const imgWidth = usableWidth;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = marginTop;
+
+    pdf.addImage(imgData, 'JPEG', marginSide, position, imgWidth, imgHeight);
+    heightLeft -= usableHeight;
+
+    while(heightLeft > 0){
+      position = marginTop - (imgHeight - heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', marginSide, position, imgWidth, imgHeight);
+      heightLeft -= usableHeight;
+    }
+    pdf.save('活動紀錄表.pdf');
+  } catch(err){
+    alert('匯出 PDF 時發生錯誤：' + err.message);
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+});
+
+// ---------- Word (.doc) export ----------
+
+// Shrink an image dataURL down before embedding, so the .doc stays a
+// reasonable size and Word doesn't choke on huge base64 payloads.
+function compressImage(dataUrl, maxWidth, quality){
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = Math.round(height * (maxWidth / width));
+        width = maxWidth;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function buildDocHtml(){
+  const infoRows = Array.from(document.querySelectorAll('table.info tr')).map(tr => ({
+    label: tr.querySelector('.label').textContent.trim(),
+    value: tr.querySelector('.value .editable').innerHTML
+  }));
+  const photoHeader = document.querySelector('.photo-header').textContent.trim();
+
+  const photoRowsData = [];
+  for (const row of document.querySelectorAll('#photoRows .photo-grid')){
+    const cells = [];
+    for (const cell of row.querySelectorAll('.photo-cell')){
+      const img = cell.querySelector('.drop-zone img');
+      const caption = cell.querySelector('.caption').innerHTML;
+      let imgSrc = null;
+      if (img) imgSrc = await compressImage(img.src, 300, 0.75);
+      cells.push({ imgSrc, caption });
+    }
+    photoRowsData.push(cells);
+  }
+
+  const infoRowsHtml = infoRows.map(r => `
+    <tr>
+      <td class="label" style="width:26%;text-align:center;font-weight:bold;background:#F0E2DA;border:1px solid #000;padding:8px;">${escapeHtml(r.label)}</td>
+      <td style="text-align:center;border:1px solid #000;padding:8px;">${r.value}</td>
+    </tr>`).join('');
+
+  const photoRowsHtml = photoRowsData.map(cells => `
+    <tr>
+      ${cells.map(c => `
+      <td style="width:50%;border:1px solid #000;padding:8px;vertical-align:top;text-align:center;">
+        ${c.imgSrc ? `<img src="${c.imgSrc}" width="5cm" style="width:5cm;height:auto;display:block;margin:0 auto;">` : ''}
+        <div style="margin-top:6px;font-size:12px;text-align:left;">${c.caption}</div>
+      </td>`).join('')}
+    </tr>`).join('');
+
+  return `
+  <html xmlns:o="urn:schemas-microsoft-com:office:office"
+        xmlns:w="urn:schemas-microsoft-com:office:word"
+        xmlns="http://www.w3.org/TR/REC-html40">
+  <head>
+    <meta charset="utf-8">
+    <title>活動紀錄表</title>
+    <!--[if gte mso 9]>
+    <xml>
+      <w:WordDocument>
+        <w:View>Print</w:View>
+        <w:Zoom>100</w:Zoom>
+        <w:DoNotOptimizeForBrowser/>
+      </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+      @page WordSection1 {
+        size: 21.0cm 29.7cm;
+        margin: 1.5cm 1.0cm 1.5cm 1.0cm;
+        mso-page-orientation: portrait;
+      }
+      div.WordSection1 { page: WordSection1; }
+      body{ font-family:"Microsoft JhengHei","PMingLiU",sans-serif; font-size:14px; }
+      table{ border-collapse:collapse; width:100%; mso-table-layout-alt:fixed; }
+      td{ font-size:14px; }
+      .photo-header{ text-align:center; font-weight:bold; font-size:16px; letter-spacing:6px; padding:8px 0; border:1px solid #000; background:#F0E2DA; }
+    </style>
+  </head>
+  <body>
+    <div class="WordSection1">
+      <table>
+        ${infoRowsHtml}
+      </table>
+      <table style="margin-top:0;">
+        <tr><td colspan="2" class="photo-header">${escapeHtml(photoHeader)}</td></tr>
+        ${photoRowsHtml}
+      </table>
+    </div>
+  </body>
+  </html>`;
+}
+
+document.getElementById('btnDoc').addEventListener('click', async () => {
+  const btn = document.getElementById('btnDoc');
+  const original = btn.textContent;
+  btn.textContent = '匯出中…';
+  btn.disabled = true;
+  try{
+    const docHtml = await buildDocHtml();
+    const blob = new Blob(['\ufeff', docHtml], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '活動紀錄表.doc';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(err){
+    alert('匯出 Word 時發生錯誤：' + err.message);
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
