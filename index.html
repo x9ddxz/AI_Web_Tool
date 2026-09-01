@@ -1,7 +1,120 @@
 <!DOCTYPE html>
-<html lang='zh-TW'>
-<head><meta charset='UTF-8'><title>k123github網站1.2</title></head>
-<body style='font-family:sans-serif; text-align:center; padding:50px;'>
-<h1>歡迎使用 k123github網站1.2 部署的網站！</h1>
-<p>專題資料夾已順利上傳至 GitHub Pages。</p>
-</body></html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>技藝教育課程工具箱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1f2937;
+    --ink-soft:#4b5563;
+    --paper:#faf9f6;
+    --panel:#ffffff;
+    --line:#cbd2d9;
+    --teal:#0d6e6e;
+    --teal-dark:#095656;
+    --amber:#b45309;
+    --green:#1b7a3d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Noto Sans TC',"Microsoft JhengHei",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  header{
+    background:var(--teal-dark);
+    color:#fff;
+    padding:48px 24px 40px;
+    text-align:center;
+  }
+  header h1{margin:0 0 10px;font-size:26px;font-weight:900;}
+  header p{margin:0;color:#d8ecec;font-size:14px;letter-spacing:.04em;}
+  .wrap{max-width:960px;margin:-24px auto 60px;padding:0 20px;}
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:20px;
+  }
+  a.card{
+    display:block;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-top:4px solid var(--teal);
+    border-radius:8px;
+    padding:24px 22px;
+    text-decoration:none;
+    color:inherit;
+    box-shadow:0 2px 6px rgba(0,0,0,.05);
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+  }
+  a.card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 8px 18px rgba(0,0,0,.09);
+    border-top-color:var(--teal-dark);
+  }
+  .card .tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.08em;
+    color:var(--teal-dark);
+    background:#e6f2f2;
+    padding:3px 8px;
+    border-radius:4px;
+    margin-bottom:10px;
+  }
+  .card h2{margin:0 0 8px;font-size:18px;font-weight:900;}
+  .card p{margin:0;font-size:13px;color:var(--ink-soft);line-height:1.7;}
+  .card .go{
+    display:block;
+    margin-top:16px;
+    font-size:13px;
+    font-weight:700;
+    color:var(--teal);
+  }
+  footer{
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-soft);
+    padding:0 20px 40px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>技藝教育課程工具箱</h1>
+  <p>AI 輔助製作．點名 · 試算表比對 · 活動成果紀錄</p>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <a class="card" href="attendance.html">
+      <span class="tag">點名工具</span>
+      <h2>出缺席點名簿</h2>
+      <p>依日期與節次記錄學生出席狀況，支援匯入名單、老師簽名，並可匯出成 Excel 檔案。</p>
+      <span class="go">開啟工具 →</span>
+    </a>
+
+    <a class="card" href="sheet-compare.html">
+      <span class="tag">比對工具</span>
+      <h2>試算表對照台</h2>
+      <p>上傳兩份試算表，快速比對欄位差異，找出資料不一致或缺漏的地方。</p>
+      <span class="go">開啟工具 →</span>
+    </a>
+
+    <a class="card" href="photo-report.html">
+      <span class="tag">紀錄工具</span>
+      <h2>活動紀錄表產生器</h2>
+      <p>整理活動成果照片與說明文字，排版成可匯出的活動紀錄表（PDF / 圖片）。</p>
+      <span class="go">開啟工具 →</span>
+    </a>
+  </div>
+</div>
+
+<footer>此網站由 GitHub Pages 提供服務</footer>
+</body>
+</html>

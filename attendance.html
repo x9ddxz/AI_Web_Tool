@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>技藝教育課程出缺席點名簿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1f2937;
+    --ink-soft:#4b5563;
+    --paper:#faf9f6;
+    --panel:#ffffff;
+    --line:#cbd2d9;
+    --line-strong:#8a94a3;
+    --teal:#0d6e6e;
+    --teal-dark:#095656;
+    --amber:#b45309;
+    --amber-bg:#fdf3e6;
+    --red:#b3261e;
+    --green:#1b7a3d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Noto Sans TC',"Microsoft JhengHei",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    padding:24px;
+  }
+  .wrap{max-width:1400px;margin:0 auto;}
+
+  /* ---------- header ---------- */
+  .masthead{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-top:4px solid var(--teal);
+    border-radius:6px;
+    padding:20px 26px;
+    margin-bottom:16px;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.14em;
+    color:var(--teal-dark);
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .title-line{
+    font-size:20px;
+    font-weight:900;
+    line-height:1.6;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:2px;
+  }
+  .title-line input{
+    font:inherit;
+    font-weight:900;
+    text-align:center;
+    border:none;
+    border-bottom:2px solid var(--line-strong);
+    background:transparent;
+    color:var(--red);
+    width:44px;
+    padding:0 2px;
+  }
+  .title-line input.wide{width:110px;}
+  .title-line input:focus{outline:none;border-bottom-color:var(--teal);}
+  .sub-line{
+    margin-top:8px;
+    font-size:15px;
+    font-weight:700;
+    color:var(--green);
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:2px;
+  }
+  .sub-line input{
+    font:inherit;
+    font-weight:700;
+    text-align:center;
+    border:none;
+    border-bottom:2px solid var(--line-strong);
+    background:transparent;
+    color:var(--green);
+    width:64px;
+    padding:0 2px;
+  }
+  .sub-line input.loc{width:130px;}
+  .sub-line input:focus{outline:none;border-bottom-color:var(--teal);}
+  .sub-line select.loc{
+    font:inherit;
+    font-weight:700;
+    text-align:center;
+    text-align-last:center;
+    border:none;
+    border-bottom:2px solid var(--line-strong);
+    background:transparent;
+    color:var(--green);
+    width:130px;
+    padding:0 2px;
+  }
+  .sub-line select.loc:focus{outline:none;border-bottom-color:var(--teal);}
+
+  /* ---------- toolbar ---------- */
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .toolbar button{
+    font-family:inherit;
+    font-size:13px;
+    font-weight:500;
+    border:1px solid var(--line-strong);
+    background:var(--panel);
+    color:var(--ink);
+    padding:8px 14px;
+    border-radius:5px;
+    cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .toolbar button:hover{background:#eef4f4;border-color:var(--teal);}
+  .toolbar button.primary{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .toolbar button.primary:hover{background:var(--teal-dark);}
+  .toolbar button.danger{color:var(--red);}
+  .toolbar button.danger:hover{background:#fbebea;border-color:var(--red);}
+  .toolbar .spacer{flex:1;}
+  .hint{
+    font-size:12px;
+    color:var(--ink-soft);
+    align-self:center;
+    margin-right:6px;
+  }
+
+  /* ---------- table ---------- */
+  .table-scroll{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:auto;
+    max-height:74vh;
+  }
+  table{
+    border-collapse:collapse;
+    font-size:12px;
+    width:100%;
+  }
+  th,td{
+    border:1px solid var(--line);
+    padding:4px 5px;
+    text-align:center;
+    white-space:nowrap;
+  }
+  thead th{
+    background:#eef2f4;
+    position:sticky;
+    top:0;
+    z-index:3;
+    font-weight:700;
+  }
+  thead tr.date-row th{top:0;}
+  thead tr.period-row th{top:29px;}
+  .sticky-col{
+    position:sticky;
+    background:var(--panel);
+    z-index:2;
+  }
+  thead .sticky-col{background:#eef2f4;z-index:4;}
+  col.seq{width:36px;}
+  col.class{width:70px;}
+  col.no{width:44px;}
+  col.name{width:76px;}
+  col.gender{width:44px;}
+
+  td.seq{color:var(--ink-soft);font-weight:700;background:#f5f6f7;}
+  tbody tr:nth-child(even):not(.teacher-row) td:not(.att),
+  tbody tr:nth-child(even):not(.teacher-row) td.sticky-col{
+    background:#f1f2f4;
+  }
+  tbody tr:nth-child(even):not(.teacher-row) td.att[data-status=""]{
+    background:#f1f2f4;
+  }
+  td input.cell-input{
+    width:100%;
+    border:none;
+    background:transparent;
+    font:inherit;
+    text-align:center;
+    color:var(--ink);
+    padding:2px;
+  }
+  td input.cell-input:focus{outline:2px solid var(--teal);outline-offset:-2px;border-radius:2px;}
+  td select.gender-input{
+    width:100%;
+    border:none;
+    background:transparent;
+    font:inherit;
+    text-align:center;
+  }
+  td.att{
+    cursor:pointer;
+    user-select:none;
+    font-weight:700;
+    min-width:26px;
+  }
+  td.att[data-status="出"]{color:var(--green);}
+  td.att[data-status="請"]{color:var(--amber);background:var(--amber-bg);}
+  td.att[data-status="缺"]{color:var(--red);background:#fbebea;}
+  th.date-head{background:#e4ecec;position:relative;}
+  th.date-head input{
+    font:inherit;
+    font-weight:700;
+    border:none;
+    background:transparent;
+    text-align:center;
+    width:78px;
+  }
+  th.date-head .rm-date{
+    position:absolute;
+    top:1px;
+    right:2px;
+    font-size:10px;
+    color:var(--red);
+    cursor:pointer;
+    border:none;
+    background:none;
+    line-height:1;
+  }
+  th.period-head input{
+    width:22px;
+    font:inherit;
+    font-weight:700;
+    border:none;
+    background:transparent;
+    text-align:center;
+  }
+  tr.teacher-row td, tr.teacher-row th{
+    background:#eef7ef;
+    font-weight:700;
+    color:var(--green);
+    height:60px;
+  }
+  tr.teacher-row td.att{background:#eef7ef;}
+  tr.teacher-row input.cell-input{height:100%;}
+
+  .legend{
+    margin-top:10px;
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .legend span b{margin-right:3px;}
+  .legend .lg-出{color:var(--green);}
+  .legend .lg-請{color:var(--amber);}
+  .legend .lg-缺{color:var(--red);}
+
+  /* ---------- import modal ---------- */
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(31,41,55,.45);
+    display:none;align-items:center;justify-content:center;z-index:50;
+  }
+  .modal-bg.open{display:flex;}
+  .modal{
+    background:#fff;border-radius:8px;padding:22px 24px;width:min(560px,92vw);
+    box-shadow:0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal h3{margin:0 0 8px;font-size:16px;}
+  .modal p{margin:0 0 10px;font-size:12.5px;color:var(--ink-soft);line-height:1.6;}
+  .modal textarea{
+    width:100%;height:160px;font-family:ui-monospace,monospace;font-size:12.5px;
+    border:1px solid var(--line);border-radius:5px;padding:8px;resize:vertical;
+  }
+  .modal .modal-actions{
+    display:flex;justify-content:flex-end;gap:8px;margin-top:14px;
+  }
+  .modal .modal-actions button{
+    font-family:inherit;font-size:13px;padding:7px 16px;border-radius:5px;cursor:pointer;
+  }
+  .modal .modal-actions .cancel{background:#fff;border:1px solid var(--line-strong);}
+  .modal .modal-actions .confirm{background:var(--teal);border:1px solid var(--teal);color:#fff;}
+
+  @media print{
+    body{padding:0;background:#fff;}
+    .toolbar, .legend{display:none;}
+    .masthead{border:none;padding:0 0 8px;}
+    .table-scroll{max-height:none;border:none;overflow:visible;}
+    table{font-size:10px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="eyebrow">嘉新國中 · 技藝教育課程</div>
+    <div class="title-line">
+      <input type="text" id="year" class="wide" value="114" aria-label="學年度">
+      <span>學年度第</span>
+      <input type="text" id="term" value="1" aria-label="學期">
+      <span>學期嘉新國中技藝教育課程參加學生名冊</span>
+    </div>
+    <div class="sub-line">
+      <input type="text" id="track" class="loc" value="自辦藝術" aria-label="職群">
+      <span>職群 出缺席紀錄　上課地點：</span>
+      <select id="room" class="loc" aria-label="上課地點">
+        <option value="">請選擇</option>
+        <option value="嘉新國中">嘉新國中</option>
+        <option value="民雄農工">民雄農工</option>
+        <option value="崇仁護專">崇仁護專</option>
+      </select>
+      <span>職群教室</span>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="primary" id="btnImport">匯入學生資料</button>
+    <button id="btnAddRow">＋新增列</button>
+    <button id="btnRemoveRow">－刪除末列</button>
+    <button id="btnAddDate">＋新增上課日期</button>
+    <button id="btnRemoveDate">－移除末筆日期</button>
+    <span class="spacer"></span>
+    <span class="hint">點擊節次格可切換 出席／請假／缺席</span>
+    <button id="btnExport">匯出試算表（A4 單頁）</button>
+    <button id="btnPrint">列印</button>
+  </div>
+
+  <div class="table-scroll">
+    <table id="rosterTable">
+      <colgroup>
+        <col class="seq"><col class="class"><col class="no"><col class="name"><col class="gender">
+      </colgroup>
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="legend">
+    <span class="lg-出"><b>出</b>出席</span>
+    <span class="lg-請"><b>請</b>請假</span>
+    <span class="lg-缺"><b>缺</b>缺席</span>
+    <span>空白＝尚未點名，點擊節次格依序切換，再點一次清空</span>
+  </div>
+</div>
+
+<!-- import modal -->
+<div class="modal-bg" id="importModal">
+  <div class="modal">
+    <h3>匯入學生資料</h3>
+    <p>請貼上資料，每列一位學生，欄位依序為「班級、座號、姓名、性別」，以 Tab 或逗號分隔（可從 Excel 直接複製貼上；若第一列是欄位標題會自動略過）。</p>
+    <textarea id="importText" placeholder="範例：&#10;101&#9;1&#9;王小明&#9;男&#10;101&#9;2&#9;陳小華&#9;女"></textarea>
+    <div class="modal-actions">
+      <button class="cancel" id="importCancel">取消</button>
+      <button class="confirm" id="importConfirm">匯入並取代名冊</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- state ---------------- */
+let students = Array.from({length:30}, () => ({class:'',no:'',name:'',gender:''}));
+let dateBlocks = [
+  {date:'', periods:['五','六','七']},
+  {date:'', periods:['五','六','七']},
+  {date:'', periods:['五','六','七']},
+  {date:'', periods:['五','六','七']}
+];
+// attendance[studentIndex]["dateIdx_periodIdx"] = '' | '出' | '請' | '缺'
+let attendance = {};
+let teacherSign = {}; // key "dateIdx_periodIdx" -> text
+
+const STATUS_CYCLE = ['', '出', '請', '缺'];
+
+/* ---------------- rendering ---------------- */
+function renderTable(){
+  const head = document.getElementById('tableHead');
+  const body = document.getElementById('tableBody');
+
+  // header row 1: date labels
+  let dateRow = '<tr class="date-row">' +
+    '<th class="sticky-col" rowspan="2">序號</th>' +
+    '<th class="sticky-col" rowspan="2">班級</th>' +
+    '<th class="sticky-col" rowspan="2">座號</th>' +
+    '<th class="sticky-col" rowspan="2">姓名</th>' +
+    '<th class="sticky-col" rowspan="2">性別</th>';
+  dateBlocks.forEach((db, di) => {
+    dateRow += `<th class="date-head" colspan="${db.periods.length}">
+      <button class="rm-date" title="移除此日期" data-di="${di}">✕</button>
+      <input type="text" data-di="${di}" class="date-input" placeholder="日期 例:9/12" value="${escapeAttr(db.date)}">
+    </th>`;
+  });
+  dateRow += '</tr>';
+
+  // header row 2: period labels
+  let periodRow = '<tr class="period-row">';
+  dateBlocks.forEach((db, di) => {
+    db.periods.forEach((p, pi) => {
+      periodRow += `<th class="period-head"><input type="text" data-di="${di}" data-pi="${pi}" class="period-input" value="${escapeAttr(p)}"></th>`;
+    });
+  });
+  periodRow += '</tr>';
+
+  head.innerHTML = dateRow + periodRow;
+
+  // body rows
+  let rows = '';
+  students.forEach((s, si) => {
+    rows += `<tr data-si="${si}">
+      <td class="seq">${si+1}</td>
+      <td class="sticky-col"><input class="cell-input" data-field="class" data-si="${si}" value="${escapeAttr(s.class)}"></td>
+      <td class="sticky-col"><input class="cell-input" data-field="no" data-si="${si}" value="${escapeAttr(s.no)}"></td>
+      <td class="sticky-col"><input class="cell-input" data-field="name" data-si="${si}" value="${escapeAttr(s.name)}"></td>
+      <td class="sticky-col">${genderSelect(si, s.gender)}</td>`;
+    dateBlocks.forEach((db, di) => {
+      db.periods.forEach((p, pi) => {
+        const key = di + '_' + pi;
+        const status = (attendance[si] && attendance[si][key]) || '';
+        rows += `<td class="att" data-si="${si}" data-key="${key}" data-status="${status}">${status}</td>`;
+      });
+    });
+    rows += '</tr>';
+  });
+
+  // teacher signature row
+  rows += `<tr class="teacher-row">
+    <td colspan="5">老師簽名</td>`;
+  dateBlocks.forEach((db, di) => {
+    db.periods.forEach((p, pi) => {
+      const key = di + '_' + pi;
+      const val = teacherSign[key] || '';
+      rows += `<td class="att teacher-sign" data-key="${key}"><input class="cell-input" data-teacher-key="${key}" value="${escapeAttr(val)}"></td>`;
+    });
+  });
+  rows += '</tr>';
+
+  body.innerHTML = rows;
+  attachEvents();
+}
+
+function genderSelect(si, val){
+  const opts = ['', '男', '女'];
+  return `<select class="gender-input" data-field="gender" data-si="${si}">` +
+    opts.map(o => `<option value="${o}" ${o===val?'selected':''}>${o||'—'}</option>`).join('') +
+    '</select>';
+}
+
+function escapeAttr(str){
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function attachEvents(){
+  document.querySelectorAll('input.cell-input[data-field]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const si = +e.target.dataset.si;
+      const field = e.target.dataset.field;
+      students[si][field] = e.target.value;
+    });
+  });
+  document.querySelectorAll('select.gender-input').forEach(sel => {
+    sel.addEventListener('change', e => {
+      const si = +e.target.dataset.si;
+      students[si].gender = e.target.value;
+    });
+  });
+  document.querySelectorAll('.date-input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      dateBlocks[+e.target.dataset.di].date = e.target.value;
+    });
+  });
+  document.querySelectorAll('.period-input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      dateBlocks[+e.target.dataset.di].periods[+e.target.dataset.pi] = e.target.value;
+    });
+  });
+  document.querySelectorAll('.rm-date').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const di = +e.target.dataset.di;
+      dateBlocks.splice(di,1);
+      Object.keys(attendance).forEach(si=>{
+        const cleaned = {};
+        Object.entries(attendance[si]).forEach(([k,v])=>{
+          const [kdi] = k.split('_').map(Number);
+          if(kdi !== di) cleaned[k]=v;
+        });
+        attendance[si]=cleaned;
+      });
+      renderTable();
+    });
+  });
+  document.querySelectorAll('td.att[data-key]:not(.teacher-sign)').forEach(td => {
+    td.addEventListener('click', e => {
+      const si = +e.target.dataset.si;
+      const key = e.target.dataset.key;
+      attendance[si] = attendance[si] || {};
+      const cur = attendance[si][key] || '';
+      const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(cur)+1) % STATUS_CYCLE.length];
+      attendance[si][key] = next;
+      e.target.dataset.status = next;
+      e.target.textContent = next;
+    });
+  });
+  document.querySelectorAll('input[data-teacher-key]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      teacherSign[e.target.dataset.teacherKey] = e.target.value;
+    });
+  });
+}
+
+/* ---------------- toolbar actions ---------------- */
+document.getElementById('btnAddRow').addEventListener('click', () => {
+  students.push({class:'',no:'',name:'',gender:''});
+  renderTable();
+});
+document.getElementById('btnRemoveRow').addEventListener('click', () => {
+  if(students.length>1) students.pop();
+  renderTable();
+});
+document.getElementById('btnAddDate').addEventListener('click', () => {
+  dateBlocks.push({date:'', periods:['五','六','七']});
+  renderTable();
+});
+document.getElementById('btnRemoveDate').addEventListener('click', () => {
+  if(dateBlocks.length>1) dateBlocks.pop();
+  renderTable();
+});
+document.getElementById('btnPrint').addEventListener('click', () => window.print());
+
+/* ---------------- import modal ---------------- */
+const importModal = document.getElementById('importModal');
+document.getElementById('btnImport').addEventListener('click', () => importModal.classList.add('open'));
+document.getElementById('importCancel').addEventListener('click', () => importModal.classList.remove('open'));
+document.getElementById('importConfirm').addEventListener('click', () => {
+  const raw = document.getElementById('importText').value.trim();
+  if(!raw){ importModal.classList.remove('open'); return; }
+  const lines = raw.split(/\r?\n/).filter(l => l.trim().length);
+  let rows = lines.map(l => l.split(/\t|,/).map(c => c.trim()));
+  // drop header row if it looks like labels
+  if(rows.length && /班級|座號|姓名|性別/.test(rows[0].join(''))) rows = rows.slice(1);
+  students = rows.map(r => ({
+    class: r[0] || '',
+    no: r[1] || '',
+    name: r[2] || '',
+    gender: (r[3]||'').replace(/^性別$/,'')
+  }));
+  if(students.length===0) students.push({class:'',no:'',name:'',gender:''});
+  attendance = {};
+  document.getElementById('importText').value = '';
+  importModal.classList.remove('open');
+  renderTable();
+});
+
+/* ---------------- export to xlsx, single A4 page ---------------- */
+document.getElementById('btnExport').addEventListener('click', () => {
+  const year = document.getElementById('year').value;
+  const term = document.getElementById('term').value;
+  const track = document.getElementById('track').value;
+  const room = document.getElementById('room').value;
+
+  const totalCols = 5 + dateBlocks.reduce((a,db)=>a+db.periods.length,0);
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  let rows = '';
+
+  // title
+  rows += `<tr><td colspan="${totalCols}" class="title">${esc(year)}學年度第${esc(term)}學期嘉新國中技藝教育課程參加學生名冊</td></tr>`;
+  rows += `<tr><td colspan="${totalCols}" class="subtitle">${esc(track)}職群 出缺席紀錄　上課地點：${esc(room)}職群教室</td></tr>`;
+
+  // header row 1 (date labels)
+  rows += '<tr>';
+  ['序號','班級','座號','姓名','性別'].forEach(h => {
+    rows += `<td class="hdr" rowspan="2">${h}</td>`;
+  });
+  dateBlocks.forEach(db => {
+    rows += `<td class="hdr" colspan="${db.periods.length}">${esc(db.date)}</td>`;
+  });
+  rows += '</tr>';
+
+  // header row 2 (period labels)
+  rows += '<tr>';
+  dateBlocks.forEach(db => {
+    db.periods.forEach(p => { rows += `<td class="hdr">${esc(p)}</td>`; });
+  });
+  rows += '</tr>';
+
+  // data rows
+  students.forEach((s, si) => {
+    const isEven = (si+1) % 2 === 0;
+    const rowClass = isEven ? ' class="grey"' : '';
+    rows += `<tr${rowClass}>`;
+    rows += `<td class="cell num">${si+1}</td>`;
+    rows += `<td class="cell">${esc(s.class)}</td>`;
+    rows += `<td class="cell">${esc(s.no)}</td>`;
+    rows += `<td class="cell">${esc(s.name)}</td>`;
+    rows += `<td class="cell">${esc(s.gender)}</td>`;
+    dateBlocks.forEach((db, di) => {
+      db.periods.forEach((p, pi) => {
+        const status = (attendance[si] && attendance[si][di+'_'+pi]) || '';
+        rows += `<td class="cell att-${status||'blank'}">${esc(status)}</td>`;
+      });
+    });
+    rows += '</tr>';
+  });
+
+  // teacher signature row
+  rows += `<tr class="teacher"><td colspan="5" class="teacher-label">老師簽名</td>`;
+  dateBlocks.forEach((db, di) => {
+    db.periods.forEach((p, pi) => {
+      rows += `<td class="cell teacher-sign">${esc(teacherSign[di+'_'+pi] || '')}</td>`;
+    });
+  });
+  rows += '</tr>';
+
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<!--[if gte mso 9]><xml>
+<x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>點名簿</x:Name>
+<x:WorksheetOptions>
+<x:PageSetup>
+<x:Layout x:Orientation="Landscape"/>
+<x:Header x:Margin="0.2"/>
+<x:Footer x:Margin="0.2"/>
+<x:PageMargins x:Bottom="0.35" x:Left="0.3" x:Right="0.3" x:Top="0.35"/>
+</x:PageSetup>
+<x:FitToPage/>
+<x:Print>
+<x:FitWidth>1</x:FitWidth>
+<x:FitHeight>1</x:FitHeight>
+<x:ValidPrinterInfo/>
+</x:Print>
+<x:Selected/>
+<x:DoNotDisplayGridlines/>
+</x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>
+</xml><![endif]-->
+<style>
+  @page { size: A4 landscape; mso-page-orientation: landscape; margin: 0.3in; }
+  table { border-collapse: collapse; font-family:'Microsoft JhengHei','Noto Sans TC',sans-serif; font-size:12px; }
+  td { border:1px solid #999999; padding:3px 5px; text-align:center; vertical-align:middle; mso-number-format:"\\@"; }
+  td.title { font-size:16px; font-weight:bold; border:none; color:#B3261E; height:24px; }
+  td.subtitle { font-size:13px; font-weight:bold; border:none; color:#1B7A3D; height:20px; }
+  td.hdr { background:#EEF2F4; font-weight:bold; }
+  td.grey, tr.grey td { background:#F1F2F4; }
+  td.num { font-weight:bold; color:#4B5563; }
+  td.att-出 { color:#1B7A3D; font-weight:bold; }
+  td.att-請 { color:#B45309; font-weight:bold; background:#FDF3E6; }
+  td.att-缺 { color:#B3261E; font-weight:bold; background:#FBEBEA; }
+  tr.teacher td { background:#EEF7EF; font-weight:bold; color:#1B7A3D; height:60px; mso-height-source:userset; }
+</style>
+</head>
+<body>
+<table>
+${rows}
+</table>
+</body>
+</html>`;
+
+  const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const fname = `${year}學年度第${term}學期_${track}職群_點名簿.xls`;
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fname;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+});
+
+
+renderTable();
+</script>
+</body>
+</html>

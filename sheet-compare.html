@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>試算表對照台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --paper:#F3F6EE;
+    --stripe:#E4EEDC;
+    --ink:#1E2A22;
+    --ink-soft:#4B5A4F;
+    --forest:#2F5233;
+    --forest-dark:#1C331F;
+    --line:#C7D3C0;
+    --red:#A63A2E;
+    --red-tint:#FBEAE7;
+    --amber:#9C6B12;
+    --amber-tint:#FBF0D9;
+    --green:#2E7D4F;
+    --green-tint:#E3F3E7;
+    --white:#FCFDFB;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Mono', monospace;
+    padding-bottom:80px;
+  }
+  h1,h2,h3, .stamp, .tab-label{ font-family:'Archivo', sans-serif; }
+
+  /* perforated tractor-feed edge */
+  .feed{
+    height:22px;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 10px, var(--white) 10px 11px),
+      var(--forest-dark);
+    position:relative;
+    overflow:hidden;
+  }
+  .feed::before, .feed::after{
+    content:"";
+    position:absolute; top:6px; left:0; right:0; height:10px;
+    background-image: radial-gradient(circle, var(--paper) 3.5px, transparent 3.6px);
+    background-size: 24px 10px;
+    background-repeat: repeat-x;
+    background-position: 8px 0;
+  }
+  .feed::after{ top:auto; bottom:6px; }
+
+  header.hero{
+    background: var(--forest-dark);
+    color: var(--paper);
+    padding: 36px 5vw 44px;
+  }
+  header.hero .eyebrow{
+    font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    color:#9FC2A6; margin:0 0 10px;
+  }
+  header.hero h1{
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight:900;
+    margin:0 0 12px;
+    letter-spacing:-.01em;
+  }
+  header.hero p{
+    max-width:640px;
+    color:#D3E3D6;
+    line-height:1.6;
+    margin:0;
+    font-size:14px;
+  }
+
+  main{ max-width:1180px; margin:0 auto; padding:36px 5vw 0; }
+
+  .section-label{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Archivo', sans-serif; font-weight:700; font-size:13px;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--forest);
+    margin:0 0 14px;
+  }
+  .section-label .num{
+    width:22px; height:22px; border-radius:3px;
+    background:var(--forest); color:var(--white);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px;
+  }
+
+  .upload-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:18px;
+  }
+  @media (max-width:720px){ .upload-grid{ grid-template-columns:1fr; } }
+
+  .dropcard{
+    background:var(--white);
+    border:2px dashed var(--line);
+    border-radius:6px;
+    padding:22px;
+    position:relative;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .dropcard.has-file{ border-style:solid; border-color:var(--forest); background:var(--green-tint); }
+  .dropcard.drag{ border-color:var(--forest); background:var(--green-tint); }
+  .dropcard .tab-label{
+    position:absolute; top:-11px; left:16px;
+    background:var(--forest); color:var(--white);
+    font-size:11px; font-weight:700; letter-spacing:.08em;
+    padding:3px 10px; border-radius:3px;
+  }
+  .dropcard input[type=file]{ display:none; }
+  .drop-inner{ cursor:pointer; text-align:center; padding:18px 6px 6px; }
+  .drop-inner .fname{ font-weight:600; color:var(--forest-dark); word-break:break-all; }
+  .drop-inner .hint{ color:var(--ink-soft); font-size:12.5px; margin-top:6px; }
+  .drop-inner .meta{ font-size:12px; color:var(--forest); margin-top:8px; }
+
+  .btn{
+    font-family:'Archivo', sans-serif; font-weight:700; font-size:13px;
+    letter-spacing:.04em; text-transform:uppercase;
+    border:2px solid var(--forest-dark);
+    background:var(--forest);
+    color:var(--white);
+    padding:12px 22px;
+    border-radius:4px;
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease;
+    box-shadow: 3px 3px 0 var(--forest-dark);
+  }
+  .btn:hover:not(:disabled){ transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--forest-dark); }
+  .btn:active:not(:disabled){ transform:translate(1px,1px); box-shadow:1px 1px 0 var(--forest-dark); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+  .btn.ghost{ background:transparent; color:var(--forest-dark); box-shadow:none; }
+  .btn.outline{ background:var(--white); color:var(--forest-dark); }
+
+  .actionbar{
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:14px;
+    margin:22px 0 6px;
+  }
+  .key-note{ font-size:12.5px; color:var(--ink-soft); }
+  .key-note b{ color:var(--forest-dark); }
+
+  .stats-row{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:14px;
+    margin:26px 0;
+  }
+  @media (max-width:720px){ .stats-row{ grid-template-columns:repeat(2,1fr); } }
+  .stamp{
+    border:2px solid currentColor;
+    border-radius:6px;
+    padding:14px 16px;
+    text-align:center;
+    transform:rotate(-1deg);
+    font-weight:700;
+  }
+  .stamp:nth-child(2n){ transform:rotate(1deg); }
+  .stamp .n{ font-size:26px; display:block; line-height:1; margin-bottom:4px; }
+  .stamp .l{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-family:'Archivo',sans-serif; }
+  .stamp.same{ color:var(--forest); background:var(--green-tint); }
+  .stamp.added{ color:var(--green); background:var(--green-tint); }
+  .stamp.removed{ color:var(--red); background:var(--red-tint); }
+  .stamp.diff{ color:var(--amber); background:var(--amber-tint); }
+
+  .filters{
+    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;
+  }
+  .chip{
+    font-family:'Archivo',sans-serif; font-size:12px; font-weight:700;
+    padding:7px 14px; border-radius:20px; border:1.5px solid var(--line);
+    background:var(--white); cursor:pointer; color:var(--ink-soft);
+    letter-spacing:.03em;
+  }
+  .chip.active{ background:var(--forest-dark); border-color:var(--forest-dark); color:var(--white); }
+
+  .table-wrap{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:auto;
+    max-height:560px;
+  }
+  table{ border-collapse:collapse; width:100%; font-size:12.5px; }
+  thead th{
+    position:sticky; top:0; z-index:2;
+    background:var(--forest-dark); color:var(--white);
+    font-family:'Archivo',sans-serif; font-weight:700; font-size:11.5px;
+    letter-spacing:.03em; text-transform:uppercase;
+    padding:10px 12px; text-align:left; white-space:nowrap;
+  }
+  tbody tr:nth-child(even){ background:var(--stripe); }
+  tbody tr:hover{ background:#DCEBD3; }
+  td{ padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; white-space:nowrap; }
+  td.key{ font-weight:700; color:var(--forest-dark); position:sticky; left:0; background:inherit; }
+  .badge{
+    display:inline-block; font-family:'Archivo',sans-serif; font-weight:700; font-size:10.5px;
+    letter-spacing:.05em; text-transform:uppercase;
+    padding:3px 8px; border-radius:3px; transform:rotate(-2deg);
+    border:1px solid currentColor;
+  }
+  .badge.same{ color:var(--forest); background:var(--green-tint); }
+  .badge.added{ color:var(--green); background:var(--green-tint); }
+  .badge.removed{ color:var(--red); background:var(--red-tint); }
+  .badge.diff{ color:var(--amber); background:var(--amber-tint); }
+  .cell-diff{ background:var(--amber-tint); }
+  .cell-a{ color:var(--red); text-decoration:line-through; text-decoration-color:#D8A79E; }
+  .cell-b{ color:var(--green); font-weight:600; }
+  .dash{ color:#B7C2B1; }
+
+  .empty-state{
+    text-align:center; padding:40px 20px; color:var(--ink-soft); font-size:13px;
+  }
+
+  footer{ text-align:center; padding:30px 0 10px; color:var(--ink-soft); font-size:11.5px; }
+</style>
+</head>
+<body>
+
+<div class="feed"></div>
+<header class="hero">
+  <p class="eyebrow">Ledger Diff Utility</p>
+  <h1>試算表對照台</h1>
+  <p>上傳兩份試算表(xlsx / xls / csv),系統會以「第一欄」的值為基準進行配對,標出新增、刪除與內容差異的資料列,並整理成單一表格供你下載。</p>
+</header>
+
+<main>
+
+  <div class="section-label"><span class="num">1</span>上傳兩份資料</div>
+  <div class="upload-grid">
+    <div class="dropcard" id="dropA">
+      <span class="tab-label">資料源 A</span>
+      <label class="drop-inner" for="fileA">
+        <div class="fname" id="fnameA">點擊或拖曳檔案到此</div>
+        <div class="hint">支援 .xlsx / .xls / .csv</div>
+        <div class="meta" id="metaA"></div>
+      </label>
+      <input type="file" id="fileA" accept=".xlsx,.xls,.csv">
+    </div>
+    <div class="dropcard" id="dropB">
+      <span class="tab-label">資料源 B</span>
+      <label class="drop-inner" for="fileB">
+        <div class="fname" id="fnameB">點擊或拖曳檔案到此</div>
+        <div class="hint">支援 .xlsx / .xls / .csv</div>
+        <div class="meta" id="metaB"></div>
+      </label>
+      <input type="file" id="fileB" accept=".xlsx,.xls,.csv">
+    </div>
+  </div>
+
+  <div class="actionbar">
+    <div class="key-note">比對基準:兩份檔案的 <b id="keyColName">第一欄</b>(假設首列為標題列)</div>
+    <button class="btn" id="compareBtn" disabled>開始比對</button>
+  </div>
+
+  <div id="results" style="display:none;">
+
+    <div class="section-label"><span class="num">2</span>比對結果</div>
+    <div class="stats-row">
+      <div class="stamp same"><span class="n" id="cntSame">0</span><span class="l">內容相同</span></div>
+      <div class="stamp diff"><span class="n" id="cntDiff">0</span><span class="l">內容有差異</span></div>
+      <div class="stamp added"><span class="n" id="cntAdded">0</span><span class="l">僅存在於 B</span></div>
+      <div class="stamp removed"><span class="n" id="cntRemoved">0</span><span class="l">僅存在於 A</span></div>
+    </div>
+
+    <div class="filters" id="filters">
+      <span class="chip active" data-f="all">全部</span>
+      <span class="chip" data-f="diff">差異</span>
+      <span class="chip" data-f="added">新增</span>
+      <span class="chip" data-f="removed">刪除</span>
+      <span class="chip" data-f="same">相同</span>
+    </div>
+
+    <div class="table-wrap"><table id="resultTable"></table></div>
+
+    <div class="actionbar" style="justify-content:flex-end;">
+      <button class="btn outline" id="exportBtn">匯出比對結果 (.xlsx)</button>
+    </div>
+  </div>
+
+</main>
+
+<footer>以第一欄為鍵值配對 · 資料僅在瀏覽器本機處理,不會上傳至任何伺服器</footer>
+
+<script>
+let dataA = null, dataB = null;
+let mergedRows = [];
+let columns = [];
+let keyHeader = "第一欄";
+let currentFilter = "all";
+
+function readFile(file){
+  return new Promise((resolve, reject) => {
+    const isCsv = /\.csv$/i.test(file.name);
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = (e) => {
+      try{
+        let wb;
+        if(isCsv){
+          wb = XLSX.read(e.target.result, {type:'string'});
+        } else {
+          wb = XLSX.read(e.target.result, {type:'array'});
+        }
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:"", raw:false});
+        resolve(rows.filter(r => r.some(c => String(c).trim() !== "")));
+      }catch(err){ reject(err); }
+    };
+    if(isCsv) reader.readAsText(file, 'utf-8');
+    else reader.readAsArrayBuffer(file);
+  });
+}
+
+function setupDrop(dropId, fileInputId, fnameId, metaId, slot){
+  const drop = document.getElementById(dropId);
+  const input = document.getElementById(fileInputId);
+  const fname = document.getElementById(fnameId);
+  const meta = document.getElementById(metaId);
+
+  async function handle(file){
+    if(!file) return;
+    try{
+      const rows = await readFile(file);
+      if(slot === 'A') dataA = rows; else dataB = rows;
+      drop.classList.add('has-file');
+      fname.textContent = file.name;
+      const cols = rows.length ? rows[0].length : 0;
+      meta.textContent = `${rows.length} 列 · ${cols} 欄`;
+      if(slot === 'A' && rows.length){
+        keyHeader = String(rows[0][0] || "第一欄");
+        document.getElementById('keyColName').textContent = `「${keyHeader}」欄`;
+      }
+      updateCompareBtn();
+    }catch(err){
+      fname.textContent = "讀取失敗,請確認檔案格式";
+      console.error(err);
+    }
+  }
+
+  input.addEventListener('change', (e) => handle(e.target.files[0]));
+  ['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('drag'); }));
+  drop.addEventListener('drop', (e) => { handle(e.dataTransfer.files[0]); });
+}
+
+function updateCompareBtn(){
+  document.getElementById('compareBtn').disabled = !(dataA && dataB);
+}
+
+setupDrop('dropA','fileA','fnameA','metaA','A');
+setupDrop('dropB','fileB','fnameB','metaB','B');
+
+function norm(v){
+  return String(v === undefined || v === null ? "" : v).trim();
+}
+
+function buildComparison(){
+  const headerA = dataA[0].map(norm);
+  const headerB = dataB[0].map(norm);
+
+  // union of columns (excluding key col), order: A's columns first, then B-only columns
+  columns = headerA.slice(1);
+  headerB.slice(1).forEach(h => { if(!columns.includes(h)) columns.push(h); });
+
+  const idxA = {}; headerA.forEach((h,i) => idxA[h] = i);
+  const idxB = {}; headerB.forEach((h,i) => idxB[h] = i);
+
+  const mapA = new Map();
+  for(let i=1;i<dataA.length;i++){
+    const key = norm(dataA[i][0]);
+    if(key !== "") mapA.set(key, dataA[i]);
+  }
+  const mapB = new Map();
+  for(let i=1;i<dataB.length;i++){
+    const key = norm(dataB[i][0]);
+    if(key !== "") mapB.set(key, dataB[i]);
+  }
+
+  const orderedKeys = [];
+  const seen = new Set();
+  mapA.forEach((_, k) => { orderedKeys.push(k); seen.add(k); });
+  mapB.forEach((_, k) => { if(!seen.has(k)){ orderedKeys.push(k); seen.add(k); } });
+
+  mergedRows = orderedKeys.map(key => {
+    const rowA = mapA.get(key);
+    const rowB = mapB.get(key);
+    let status;
+    const cells = columns.map(colName => {
+      const aVal = rowA ? norm(rowA[idxA[colName]]) : undefined;
+      const bVal = rowB ? norm(rowB[idxB[colName]]) : undefined;
+      return { colName, a: aVal, b: bVal, same: aVal === bVal };
+    });
+
+    if(rowA && !rowB) status = 'removed';
+    else if(!rowA && rowB) status = 'added';
+    else status = cells.every(c => c.same) ? 'same' : 'diff';
+
+    return { key, status, cells };
+  });
+}
+
+function renderTable(){
+  const table = document.getElementById('resultTable');
+  const rows = mergedRows.filter(r => currentFilter === 'all' || r.status === currentFilter);
+
+  const statusLabel = { same:'相同', diff:'差異', added:'新增', removed:'刪除' };
+
+  let html = '<thead><tr>';
+  html += `<th>${keyHeader}</th>`;
+  columns.forEach(c => html += `<th>${c}</th>`);
+  html += '<th>狀態</th></tr></thead><tbody>';
+
+  if(rows.length === 0){
+    html += `<tr><td colspan="${columns.length+2}"><div class="empty-state">此篩選條件下沒有資料列</div></td></tr>`;
+  }
+
+  rows.forEach(r => {
+    html += '<tr>';
+    html += `<td class="key">${r.key}</td>`;
+    r.cells.forEach(c => {
+      if(r.status === 'removed'){
+        html += `<td>${c.a || '<span class="dash">—</span>'}</td>`;
+      } else if(r.status === 'added'){
+        html += `<td>${c.b || '<span class="dash">—</span>'}</td>`;
+      } else if(c.same){
+        html += `<td>${c.a || '<span class="dash">—</span>'}</td>`;
+      } else {
+        html += `<td class="cell-diff"><div class="cell-a">${c.a || '<span class="dash">—</span>'}</div><div class="cell-b">${c.b || '<span class="dash">—</span>'}</div></td>`;
+      }
+    });
+    html += `<td><span class="badge ${r.status}">${statusLabel[r.status]}</span></td>`;
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function updateStats(){
+  const counts = { same:0, diff:0, added:0, removed:0 };
+  mergedRows.forEach(r => counts[r.status]++);
+  document.getElementById('cntSame').textContent = counts.same;
+  document.getElementById('cntDiff').textContent = counts.diff;
+  document.getElementById('cntAdded').textContent = counts.added;
+  document.getElementById('cntRemoved').textContent = counts.removed;
+}
+
+document.getElementById('compareBtn').addEventListener('click', () => {
+  buildComparison();
+  updateStats();
+  renderTable();
+  document.getElementById('results').style.display = 'block';
+});
+
+document.getElementById('filters').addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  currentFilter = chip.dataset.f;
+  renderTable();
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const statusLabel = { same:'相同', diff:'差異', added:'新增(僅B)', removed:'刪除(僅A)' };
+  const header = [keyHeader];
+  columns.forEach(c => { header.push(`${c} (A)`); header.push(`${c} (B)`); });
+  header.push('狀態');
+
+  const aoa = [header];
+  mergedRows.forEach(r => {
+    const row = [r.key];
+    r.cells.forEach(c => {
+      row.push(r.status === 'added' ? '' : (c.a ?? ''));
+      row.push(r.status === 'removed' ? '' : (c.b ?? ''));
+    });
+    row.push(statusLabel[r.status]);
+    aoa.push(row);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "比對結果");
+  XLSX.writeFile(wb, "比對結果.xlsx");
+});
+</script>
+
+</body>
+</html>
